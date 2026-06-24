@@ -11,11 +11,13 @@ import { Butterfly } from './entities/Butterfly';
 import { Ladybug } from './entities/Ladybug';
 
 const canvas = document.getElementById('app-canvas') as HTMLCanvasElement;
-const ctx = canvas.getContext('2d')!;
+// Use { alpha: false } to skip compositor transparency blending for the base canvas
+const ctx = canvas.getContext('2d', { alpha: false })!;
 
 let width = window.innerWidth;
 let height = window.innerHeight;
-let dpr = window.devicePixelRatio || 1;
+// Cap DPR at 1.5 to save massive memory/GPU processing on 3x retina devices
+let dpr = Math.min(window.devicePixelRatio || 1, 1.5);
 
 canvas.width = width * dpr;
 canvas.height = height * dpr;
@@ -32,19 +34,19 @@ function init() {
   flora = [];
   scenery = [];
 
-  for (let i = 0; i < 50; i++) flora.push(new Leaf(width, height));
-  for (let i = 0; i < 70; i++) fauna.push(new Firefly(width, height, Math.random() * width, Math.random() * height * 2));
-  for (let i = 0; i < 30; i++) flora.push(new Flower(Math.random() * width, height - 90 + Math.random() * 80));
-  for (let i = 0; i < 25; i++) flora.push(new Mushroom(Math.random() * width, height - 70 + Math.random() * 60));
+  // Reduced entity counts for mobile/GPU optimization
+  for (let i = 0; i < 25; i++) flora.push(new Leaf(width, height));
+  for (let i = 0; i < 35; i++) fauna.push(new Firefly(width, height, Math.random() * width, Math.random() * height * 2));
+  for (let i = 0; i < 18; i++) flora.push(new Flower(Math.random() * width, height - 90 + Math.random() * 80));
+  for (let i = 0; i < 15; i++) flora.push(new Mushroom(Math.random() * width, height - 70 + Math.random() * 60));
   
   fauna.push(new Frog(width * 0.25, height - 50));
   fauna.push(new Frog(width * 0.75, height - 30));
   fauna.push(new Frog(width * 0.5, height - 20));
 
-  // Additional Bugs
-  for (let i = 0; i < 12; i++) fauna.push(new Bee(width, height));
-  for (let i = 0; i < 15; i++) fauna.push(new Butterfly(width, height));
-  for (let i = 0; i < 15; i++) fauna.push(new Ladybug(width, height));
+  for (let i = 0; i < 8; i++) fauna.push(new Bee(width, height));
+  for (let i = 0; i < 8; i++) fauna.push(new Butterfly(width, height));
+  for (let i = 0; i < 6; i++) fauna.push(new Ladybug(width, height));
 
   scenery.push(new Cabin(width * 0.85, height - 180, 0.8));
 }
@@ -54,7 +56,7 @@ init();
 window.addEventListener('resize', () => {
   width = window.innerWidth;
   height = window.innerHeight;
-  dpr = window.devicePixelRatio || 1;
+  dpr = Math.min(window.devicePixelRatio || 1, 1.5);
   canvas.width = width * dpr;
   canvas.height = height * dpr;
   ctx.resetTransform();
@@ -77,7 +79,7 @@ function updateScroll() {
   scrollVelocity = (currentScroll - lastScrollY) / maxScroll;
   lastScrollY = currentScroll;
   
-  const totalScenes = 12; // Updated to 12
+  const totalScenes = 12;
   const progressPerScene = 1 / totalScenes;
   
   let currentIntensity = 0;
@@ -125,7 +127,12 @@ function animate(time: number) {
     } else {
       entity.update(time, scrollVelocity, scrollProgress);
     }
-    entity.draw(ctx);
+    
+    // Frustum Culling: Only draw if within screen vertical bounds
+    const yPos = entity.baseY !== undefined ? entity.baseY : entity.y;
+    if (yPos > -300 && yPos < height + 300) {
+      entity.draw(ctx);
+    }
   }
 
   scrollVelocity *= 0.9;
