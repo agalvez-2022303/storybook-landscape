@@ -111,9 +111,7 @@ function updateScroll() {
 window.addEventListener('scroll', updateScroll);
 setTimeout(updateScroll, 50);
 
-let lastTime = performance.now();
 function animate(time: number) {
-  lastTime = time;
   ctx.clearRect(0, 0, width, height);
   
   environment.update(time, scrollProgress);
